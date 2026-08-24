@@ -9,7 +9,7 @@ main.o: main.c stats.h
 	$(CC) $(CFLAGS) -c main.c -o main.o
 
 stats.o: stats.c stats.h
-	$(CC) -c stats.c $(CFLAGS) $(LIBS) -o stats.o
+	$(CC) -c stats.c $(CFLAGS) -o stats.o
 
 
 clean:
