@@ -4,15 +4,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define SCREEN_DIMENSIONS
 #define WIDTH 900
 #define HEIGHT 600
+#define GRID_SIZE 50
+
 #define RADIUS 4
 #define DASH_SIZE 20
 #define SPACE_SIZE 10
 #define TOLERANCE 10
 #define THICKNESS 3
-#define GRID_SIZE 50
 
 int i;
 int n = 0;
@@ -43,6 +43,10 @@ void draw_line(SLRModel *model) {
 }
 
 int main() {
+  if ((HEIGHT % GRID_SIZE != 0) || (WIDTH % GRID_SIZE != 0)) {
+    puts("ERROR: Window dimensions not a multiple of grid size.");
+    return 1;
+  }
   InitWindow(WIDTH, HEIGHT, "SLR");
   SetTargetFPS(60);
   data = NULL;
@@ -57,12 +61,13 @@ int main() {
 
     if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
       mouse_position = GetMousePosition();
-      data = insert_new_data(data, mouse_position);
+      data = insert_new_data(data, mouse_position, WIDTH, HEIGHT, GRID_SIZE);
       n++;
       printf("Added screen datapoint %d: (%.2f, %.2f)\n", n, mouse_position.x,
              mouse_position.y);
       printf("Added graph datapoint %d: (%.2f, %.2f)\n", n,
-             convert_x(mouse_position.x), convert_y(mouse_position.y));
+             convert_x(mouse_position.x, WIDTH, GRID_SIZE),
+             convert_y(mouse_position.y, HEIGHT, GRID_SIZE));
       screen_model = compute_slr(data, screen_model, SCREEN);
       graph_model = compute_slr(data, graph_model, GRAPH);
     }

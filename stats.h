@@ -1,10 +1,5 @@
 #include <raylib.h>
 #include <stddef.h>
-#ifndef SCREEN_DIMENSIONS
-#define WIDTH 900
-#define HEIGHT 600
-#define SCREEN_DIMENSIONS
-#endif
 #define SCREEN 0
 #define GRAPH 1
 
@@ -19,10 +14,11 @@ typedef struct SLRModel {
   float slope;
 } SLRModel;
 
-DataPoint *insert_new_data(DataPoint *list, Vector2 p);
+DataPoint *insert_new_data(DataPoint *list, Vector2 p, int width, int height,
+                           int grid_size);
 Vector2 offset(Vector2 screen_coords, int width, int height);
-float convert_x(float x);
-float convert_y(float y);
+float convert_x(float x, int width, int grid_size);
+float convert_y(float y, int height, int grid_size);
 
 float calculate_xmean(DataPoint *list, int coords);
 

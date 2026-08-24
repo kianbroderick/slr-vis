@@ -3,21 +3,27 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-Vector2 convert_screen_to_graph(Vector2 screen_coords, int width, int height) {
+Vector2 convert_screen_to_graph(Vector2 screen_coords, int width, int height,
+                                int grid_size) {
   Vector2 graph_coords;
-  graph_coords.x = (screen_coords.x - width / 2) / 50;
-  graph_coords.y = ((height / 2) - screen_coords.y) / 50;
+  graph_coords.x = (screen_coords.x - width / 2) / grid_size;
+  graph_coords.y = ((height / 2) - screen_coords.y) / grid_size;
   return graph_coords;
 }
 
-float convert_x(float x) { return (x - WIDTH / 2) / 50; }
-float convert_y(float y) { return ((HEIGHT / 2) - y) / 50; }
+float convert_x(float x, int width, int grid_size) {
+  return (x - (width / 2)) / grid_size;
+}
+float convert_y(float y, int height, int grid_size) {
+  return ((height / 2) - y) / grid_size;
+}
 
-DataPoint *insert_new_data(DataPoint *list, Vector2 p) {
+DataPoint *insert_new_data(DataPoint *list, Vector2 p, int width, int height,
+                           int grid_size) {
   DataPoint *new_node;
   new_node = malloc(sizeof(DataPoint));
   new_node->screen = p;
-  new_node->graph = convert_screen_to_graph(p, WIDTH, HEIGHT);
+  new_node->graph = convert_screen_to_graph(p, width, height, grid_size);
   new_node->next = list;
   return new_node;
 }
