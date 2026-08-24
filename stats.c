@@ -28,6 +28,16 @@ DataPoint *insert_new_data(DataPoint *list, Vector2 p, int width, int height,
   return new_node;
 }
 
+void reset(DataPoint **head) {
+  DataPoint *current = *head;
+  while (current != NULL) {
+    DataPoint *next = current->next;
+    free(current);
+    current = next;
+  }
+  *head = NULL;
+}
+
 float calculate_xmean(DataPoint *list, int coords) {
   if (list == NULL) {
     puts("empty list in xmean");

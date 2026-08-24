@@ -16,6 +16,7 @@ typedef struct SLRModel {
 
 DataPoint *insert_new_data(DataPoint *list, Vector2 p, int width, int height,
                            int grid_size);
+void reset(DataPoint **head);
 Vector2 offset(Vector2 screen_coords, int width, int height);
 float convert_x(float x, int width, int grid_size);
 float convert_y(float y, int height, int grid_size);

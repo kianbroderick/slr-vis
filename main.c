@@ -53,6 +53,11 @@ int main() {
   screen_model = malloc(sizeof(struct SLRModel));
   graph_model = malloc(sizeof(struct SLRModel));
   while (!WindowShouldClose()) {
+    if (IsKeyPressed(KEY_R)) {
+      reset(&data);
+      n = 0;
+      puts("Reset data points.");
+    }
 
     BeginDrawing();
     draw_grid(GRID_SIZE);
