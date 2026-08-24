@@ -39,7 +39,7 @@ void draw_grid(int grid_size) {
 
 void draw_line(SLRModel *model) {
   float end_y = model->slope * WIDTH + model->intercept;
-  DrawLineEx((Vector2){0, model->intercept}, (Vector2){WIDTH, end_y}, 3, BLUE);
+  DrawLineEx((Vector2){0, model->intercept}, (Vector2){WIDTH, end_y}, 3, RED);
 }
 
 int main() {
@@ -67,9 +67,6 @@ int main() {
       graph_model = compute_slr(data, graph_model, GRAPH);
     }
 
-    for (DataPoint *p = data; p != NULL; p = p->next) {
-      DrawCircle(p->screen.x, p->screen.y, RADIUS, BLUE);
-    }
     if (data != NULL && n > 1) {
       float sst = calculate_sst(graph_model, data, GRAPH);
       float sse = calculate_sse(graph_model, data, GRAPH);
@@ -78,6 +75,9 @@ int main() {
                           graph_model->slope),
                10, 10, 30, BLACK);
       DrawText(TextFormat("R^2 = %.2f\n", 1 - (sse / sst)), 10, 60, 30, BLACK);
+    }
+    for (DataPoint *p = data; p != NULL; p = p->next) {
+      DrawCircle(p->screen.x, p->screen.y, RADIUS, BLUE);
     }
     EndDrawing();
   }
