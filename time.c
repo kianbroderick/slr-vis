@@ -25,10 +25,12 @@ void smooth_moving_average(DataPoint *head, int k) {
 
 void smoothing_exponential(DataPoint *head, double w) {
   DataPoint *p = head;
-  p->smoothed = (1 - w) * p->graph_coords.y;
-  p = p->next;
-  for (; p != NULL; p = p->next) {
-    p->smoothed = (1 - w) * p->screen_coords.y + w * p->prev->smoothed;
+  if (p != NULL) {
+    p->smoothed = (1 - w) * p->graph_coords.y;
+    p = p->next;
+    for (; p != NULL; p = p->next) {
+      p->smoothed = (1 - w) * p->screen_coords.y + w * p->prev->smoothed;
+    }
   }
 }
 
