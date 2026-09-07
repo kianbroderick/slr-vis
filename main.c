@@ -1,46 +1,24 @@
-#include "stats.h"
+#include "plotting.h"
+#include "slr.h"
+#include "time.h"
 #include <raylib.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
-
-#define WIDTH 900
-#define HEIGHT 600
-#define GRID_SIZE 50
 
 #define RADIUS 4
 #define DASH_SIZE 20
 #define SPACE_SIZE 10
 #define TOLERANCE 10
 #define THICKNESS 3
+#define K 5
+#define W 0.70
 
 int i;
-int n = 0;
 Vector2 mouse_position;
-DataPoint *data;
-SLRModel *screen_model;
-SLRModel *graph_model;
-
-void draw_grid(int grid_size) {
-  for (int x = 0; x < WIDTH; x += grid_size) {
-    DrawLine(x, 0, x, HEIGHT, DARKGRAY);
-    if (x == WIDTH / 2) {
-      DrawLineEx((Vector2){x, 0}, (Vector2){x, HEIGHT}, 5, DARKGRAY);
-    }
-  }
-
-  for (int y = 0; y < HEIGHT; y += grid_size) {
-    DrawLine(0, y, WIDTH, y, DARKGRAY);
-    if (y == HEIGHT / 2) {
-      DrawLineEx((Vector2){0, y}, (Vector2){WIDTH, y}, 5, DARKGRAY);
-    }
-  }
-}
-
-void draw_line(SLRModel *model) {
-  float end_y = model->slope * WIDTH + model->intercept;
-  DrawLineEx((Vector2){0, model->intercept}, (Vector2){WIDTH, end_y}, 3, RED);
-}
+Data data = {.mode = SLR, .n = 0, .head = NULL};
+Data *pdata = &data;
+int grid_size = GRID_SIZE;
 
 int main() {
   if ((HEIGHT % GRID_SIZE != 0) || (WIDTH % GRID_SIZE != 0)) {
@@ -49,45 +27,92 @@ int main() {
   }
   InitWindow(WIDTH, HEIGHT, "SLR");
   SetTargetFPS(60);
-  data = NULL;
-  screen_model = malloc(sizeof(struct SLRModel));
-  graph_model = malloc(sizeof(struct SLRModel));
+  pdata->head = NULL;
   while (!WindowShouldClose()) {
+    mouse_position = GetMousePosition();
     if (IsKeyPressed(KEY_R)) {
-      reset(&data);
-      n = 0;
+      reset(pdata);
       puts("Reset data points.");
+    }
+    if (IsKeyPressed(KEY_ONE)) {
+      reset(pdata);
+      pdata->mode = SLR;
+      puts("SLR mode.");
+    }
+    if (IsKeyPressed(KEY_TWO)) {
+      if (pdata->mode == SLR)
+        reset(pdata);
+      pdata->mode = AVERAGE_SMOOTHING;
+      puts("Moving average smoothing mode.");
+    }
+    if (IsKeyPressed(KEY_THREE)) {
+      if (pdata->mode == SLR)
+        reset(pdata);
+      pdata->mode = EXPONENTIAL_SMOOTHING;
+      puts("Exponential smoothing mode.");
+    }
+    if (IsKeyPressed(KEY_A)) {
+      reset(pdata);
+      grid_size = update_grid_size(grid_size, false, WIDTH, HEIGHT);
+      printf("new smaller grid size = %d\n", grid_size);
+    }
+    if (IsKeyPressed(KEY_S)) {
+      reset(pdata);
+      grid_size = update_grid_size(grid_size, true, WIDTH, HEIGHT);
+      printf("new larger grid size = %d\n", grid_size);
+    }
+    if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+      if (pdata->mode == SLR) {
+        insert_new_data(pdata, mouse_position, WIDTH, HEIGHT, grid_size);
+        printf("Added screen datapoint %d: (%.2f, %.2f)\n", pdata->n,
+               mouse_position.x, mouse_position.y);
+        printf("Added graph datapoint %d: (%.2f, %.2f)\n", pdata->n,
+               convert_x(mouse_position.x, WIDTH, grid_size),
+               convert_y(mouse_position.y, HEIGHT, grid_size));
+      } else if (pdata->mode == AVERAGE_SMOOTHING) {
+        if (pdata->n < WIDTH / grid_size) {
+          insert_new_data(pdata,
+                          (Vector2){pdata->n * grid_size, mouse_position.y},
+                          WIDTH, HEIGHT, grid_size);
+          printf("Added graph datapoint %d: (%.2f, %.2f)\n", pdata->n,
+                 convert_x(pdata->n * grid_size, WIDTH, grid_size),
+                 convert_y(mouse_position.y, HEIGHT, grid_size));
+        } else {
+          puts("Max datapoints reached. Cannot add more without resetting.");
+        }
+      } else if (pdata->mode == EXPONENTIAL_SMOOTHING) {
+        if (pdata->n < WIDTH / grid_size) {
+          insert_new_data(pdata,
+                          (Vector2){pdata->n * grid_size, mouse_position.y},
+                          WIDTH, HEIGHT, grid_size);
+          printf("Added graph datapoint %d: (%.2f, %.2f)\n", pdata->n,
+                 convert_x(pdata->n * grid_size, WIDTH, grid_size),
+                 convert_y(mouse_position.y, HEIGHT, grid_size));
+        } else {
+          puts("Max datapoints reached. Cannot add more without resetting.");
+        }
+      }
+    }
+    if (pdata->mode == AVERAGE_SMOOTHING) {
+      smooth_moving_average(pdata->head, K);
+    } else if (pdata->mode == EXPONENTIAL_SMOOTHING) {
+      smoothing_exponential(pdata->head, W);
     }
 
     BeginDrawing();
-    draw_grid(GRID_SIZE);
     ClearBackground(RAYWHITE);
-    DrawGrid(100, 50);
-
-    if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
-      mouse_position = GetMousePosition();
-      data = insert_new_data(data, mouse_position, WIDTH, HEIGHT, GRID_SIZE);
-      n++;
-      printf("Added screen datapoint %d: (%.2f, %.2f)\n", n, mouse_position.x,
-             mouse_position.y);
-      printf("Added graph datapoint %d: (%.2f, %.2f)\n", n,
-             convert_x(mouse_position.x, WIDTH, GRID_SIZE),
-             convert_y(mouse_position.y, HEIGHT, GRID_SIZE));
-      screen_model = compute_slr(data, screen_model, SCREEN);
-      graph_model = compute_slr(data, graph_model, GRAPH);
+    draw_grid(grid_size);
+    draw_points(pdata->head, RADIUS, BLUE);
+    if (pdata->mode != SLR) {
+      DrawCircle(pdata->n * grid_size, mouse_position.y, RADIUS, RED);
     }
 
-    if (data != NULL && n > 1) {
-      float sst = calculate_sst(graph_model, data, GRAPH);
-      float sse = calculate_sse(graph_model, data, GRAPH);
-      draw_line(screen_model);
-      DrawText(TextFormat("Y = %.2f + %.2fX\n", graph_model->intercept,
-                          graph_model->slope),
-               10, 10, 30, BLACK);
-      DrawText(TextFormat("R^2 = %.2f\n", 1 - (sse / sst)), 10, 60, 30, BLACK);
-    }
-    for (DataPoint *p = data; p != NULL; p = p->next) {
-      DrawCircle(p->screen.x, p->screen.y, RADIUS, BLUE);
+    if (pdata->mode == SLR) {
+      draw_model_text(pdata);
+    } else if (pdata->mode == AVERAGE_SMOOTHING) {
+      draw_avg_smooth_predictions(pdata->head, K, RADIUS, GREEN);
+    } else if (pdata->mode == EXPONENTIAL_SMOOTHING) {
+      draw_exp_smooth_predictions(pdata->head, RADIUS, GREEN);
     }
     EndDrawing();
   }
